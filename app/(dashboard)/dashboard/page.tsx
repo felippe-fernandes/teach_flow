@@ -1,5 +1,4 @@
-import { getUser, logout } from "@/lib/actions/auth";
-import { Button } from "@/components/ui/button";
+import { getUser } from "@/lib/actions/auth";
 import {
   Card,
   CardContent,
@@ -17,19 +16,13 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">
-              Bem-vindo de volta, {user.name}!
-            </p>
-          </div>
-          <form action={logout}>
-            <Button variant="outline">Sair</Button>
-          </form>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <p className="text-muted-foreground">
+          Bem-vindo de volta, {user.name}!
+        </p>
+      </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Card>
@@ -131,7 +124,6 @@ export default async function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 }
