@@ -12,7 +12,8 @@
       "Bash(npx prisma generate:*)",
       "Bash(npx prisma db push:*)",
       "Bash(npm run dev:*)",
-      "Bash(timeout 10 bash:*)"
+      "Bash(timeout 10 bash:*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []
