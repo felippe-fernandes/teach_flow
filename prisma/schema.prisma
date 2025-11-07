@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                       String       @id @default(uuid())
+  name                     String
+  email                    String       @unique
+  phone_number             String?
+  timezone                 String       @default("America/Sao_Paulo")
+  default_currency         String       @default("BRL")
+  two_factor_enabled       Boolean      @default(false)
+  totp_secret              String?
+  notification_preferences Json?
+  google_id                String?      @unique
+  supabase_auth_id         String       @unique
+  created_at               DateTime     @default(now())
+  updated_at               DateTime     @updatedAt
+
+  contractors Contractor[]
+  students    Student[]
+  classes     Class[]
+  payments    Payment[]
+
+  @@map("users")
+}
+
+model Contractor {
+  id                            String   @id @default(uuid())
+  user_id                       String
+  name                          String
+  contact_info                  Json?
+  default_hourly_rate           Decimal  @db.Decimal(10, 2)
+  currency                      String   @default("BRL")
+  payment_frequency             String   @default("monthly")
+  payment_terms_days            Int      @default(0)
+  min_cancellation_notice_hours Int      @default(24)
+  cancellation_penalty_rate     Decimal  @default(0.0) @db.Decimal(3, 2)
+  notes                         String?  @db.Text
+  created_at                    DateTime @default(now())
+  updated_at                    DateTime @updatedAt
+
+  user     User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  students Student[]
+  classes  Class[]
+  payments Payment[]
+
+  @@unique([user_id, name])
+  @@map("contractors")
+}
+
+model Student {
+  id                String   @id @default(uuid())
+  user_id           String
+  name              String
+  email             String?
+  phone_number      String?
+  native_language   String?
+  proficiency_level String?
+  contractor_id     String?
+  status            String   @default("active")
+  learning_goals    String?  @db.Text
+  notes             String?  @db.Text
+  package_details   Json?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  user       User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  contractor Contractor? @relation(fields: [contractor_id], references: [id], onDelete: SetNull)
+  classes    Class[]
+  payments   Payment[]
+
+  @@unique([user_id, name])
+  @@map("students")
+}
+
+model Class {
+  id                       String   @id @default(uuid())
+  user_id                  String
+  student_id               String
+  contractor_id            String
+  start_time               DateTime @db.Timestamptz(6)
+  end_time                 DateTime @db.Timestamptz(6)
+  duration_minutes         Int
+  status                   String   @default("scheduled")
+  location_type            String   @default("online")
+  virtual_meeting_link     String?
+  class_notes              String?  @db.Text
+  custom_rate              Decimal? @db.Decimal(10, 2)
+  is_recurrent             Boolean  @default(false)
+  recurrence_pattern       Json?
+  google_calendar_event_id String?  @unique
+  preply_event_id          String?  @unique
+  created_at               DateTime @default(now())
+  updated_at               DateTime @updatedAt
+
+  user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  student    Student    @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  contractor Contractor @relation(fields: [contractor_id], references: [id])
+  payments   Payment[]
+
+  @@map("classes")
+}
+
+model Payment {
+  id            String    @id @default(uuid())
+  user_id       String
+  class_id      String?
+  student_id    String?
+  contractor_id String
+  amount        Decimal   @db.Decimal(10, 2)
+  currency      String    @default("BRL")
+  type          String    @default("income")
+  status        String    @default("pending")
+  due_date      DateTime  @db.Date
+  received_date DateTime? @db.Date
+  payment_method String?
+  notes         String?   @db.Text
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  user       User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  class      Class?      @relation(fields: [class_id], references: [id], onDelete: SetNull)
+  student    Student?    @relation(fields: [student_id], references: [id], onDelete: SetNull)
+  contractor Contractor  @relation(fields: [contractor_id], references: [id])
+
+  @@map("payments")
+}
