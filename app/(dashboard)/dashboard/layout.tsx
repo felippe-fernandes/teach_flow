@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getUser, logout } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   LayoutDashboard,
   Building2,
@@ -37,12 +38,15 @@ export default async function DashboardLayout({
       {/* Sidebar */}
       <aside className="w-64 bg-card border-r flex flex-col">
         <div className="p-6 border-b">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">T</span>
-            </div>
-            <span className="font-bold text-xl">TeachFlow</span>
-          </Link>
+          <div className="flex items-center justify-between">
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-lg">T</span>
+              </div>
+              <span className="font-bold text-xl">TeachFlow</span>
+            </Link>
+            <ThemeToggle />
+          </div>
         </div>
 
         <nav className="flex-1 p-4 space-y-2">
