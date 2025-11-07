@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { getStudents } from "@/lib/actions/students";
-import { getContractors } from "@/lib/actions/contractors";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,7 +13,6 @@ import { Plus, Users, GraduationCap, Globe } from "lucide-react";
 
 export default async function StudentsPage() {
   const students = await getStudents();
-  const contractors = await getContractors();
 
   const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
     active: { label: "Ativo", variant: "default" },
@@ -118,7 +116,8 @@ export default async function StudentsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {students.map((student) => {
-            const packageDetails = student.package_details as any;
+            type PackageDetails = { total_classes?: number; remaining_classes?: number; price_per_class?: number };
+            const packageDetails = student.package_details as PackageDetails | null;
 
             return (
               <Link

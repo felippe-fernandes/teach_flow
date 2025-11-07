@@ -4,16 +4,18 @@ import { getStudent, deleteStudent } from "@/lib/actions/students";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Edit, Trash2, Mail, Phone, GraduationCap, Calendar, DollarSign } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Mail, Phone, GraduationCap } from "lucide-react";
 
-export default async function StudentDetailPage({ params }: { params: { id: string } }) {
-  const student = await getStudent(params.id);
+export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const student = await getStudent(id);
 
   if (!student) {
     notFound();
   }
 
-  const packageDetails = student.package_details as any;
+  type PackageDetails = { total_classes?: number; remaining_classes?: number; price_per_class?: number; value_per_package?: number; currency?: string; expires_at?: string };
+  const packageDetails = student.package_details as PackageDetails | null;
 
   const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
     active: { label: "Ativo", variant: "default" },
@@ -30,7 +32,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
 
   async function handleDelete() {
     "use server";
-    const result = await deleteStudent(params.id);
+    const result = await deleteStudent(id);
     if (result?.success) {
       redirect("/dashboard/students");
     }
@@ -106,7 +108,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
             <CardHeader><CardTitle>Pacote de Aulas</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div><p className="text-sm font-medium">Aulas Restantes</p><p className="text-2xl font-bold">{packageDetails.remaining_classes}/{packageDetails.total_classes}</p></div>
-              <div><p className="text-sm font-medium">Valor do Pacote</p><p className="text-sm text-muted-foreground">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: packageDetails.currency || "BRL" }).format(packageDetails.value_per_package)}</p></div>
+              <div><p className="text-sm font-medium">Valor do Pacote</p><p className="text-sm text-muted-foreground">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: packageDetails.currency || "BRL" }).format(packageDetails.value_per_package || 0)}</p></div>
               {packageDetails.expires_at && (
                 <div><p className="text-sm font-medium">Expira em</p><p className="text-sm text-muted-foreground">{new Date(packageDetails.expires_at).toLocaleDateString("pt-BR")}</p></div>
               )}
