@@ -12,9 +12,25 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error && data.user) {
-      const existingUser = await prisma.user.findUnique({
+      // Check if user exists by supabase_auth_id
+      let existingUser = await prisma.user.findUnique({
         where: { supabase_auth_id: data.user.id },
       });
+
+      // If user doesn't exist by supabase_auth_id, check by email
+      // This handles case where user registered with email/password and now logging in with OAuth
+      if (!existingUser && data.user.email) {
+        const userByEmail = await prisma.user.findUnique({
+          where: { email: data.user.email },
+        });
+
+        if (userByEmail) {
+          // User exists with this email but different auth method
+          // This shouldn't happen in normal flow - OAuth should be linked via linkIdentity
+          console.log("User exists with email but different auth ID - this is unusual");
+          return NextResponse.redirect(`${origin}/login?error=email_already_exists`);
+        }
+      }
 
       if (!existingUser) {
         try {
@@ -33,12 +49,19 @@ export async function GET(request: Request) {
                        data.user.email?.split("@")[0] ||
                        "User";
 
-          await prisma.user.create({
+          console.log("Creating user in database:", {
+            email: data.user.email,
+            name,
+            provider: data.user.app_metadata?.provider,
+            user_metadata: data.user.user_metadata,
+          });
+
+          existingUser = await prisma.user.create({
             data: {
               supabase_auth_id: data.user.id,
               email: data.user.email!,
               name: name,
-              google_id: data.user.app_metadata?.provider === "google" ? data.user.user_metadata?.sub : undefined,
+              google_id: data.user.app_metadata?.provider === "google" ? data.user.user_metadata?.sub : null,
               timezone: timezone,
               default_currency: "BRL",
             },
@@ -47,7 +70,9 @@ export async function GET(request: Request) {
           console.log("User created successfully in database:", data.user.email);
         } catch (createError) {
           console.error("Error creating user in database:", createError);
-          // Continue anyway - user exists in Supabase auth
+          console.error("Full error details:", JSON.stringify(createError, null, 2));
+          // Don't continue if user creation failed - redirect to error page
+          return NextResponse.redirect(`${origin}/login?error=registration_failed`);
         }
       }
 
