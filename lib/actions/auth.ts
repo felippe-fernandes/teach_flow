@@ -42,10 +42,20 @@ export async function signup(formData: FormData) {
     return { error: error.message };
   }
 
-  if (authData.user) {
+  // Check if email confirmation is required
+  const emailConfirmationRequired = authData.user && !authData.user.email_confirmed_at;
+
+  if (authData.user && !emailConfirmationRequired) {
+    // User is auto-confirmed (e.g., via OAuth or email confirmation disabled)
     try {
       const phoneNumber = formData.get("phone_number") as string | null;
       const timezone = formData.get("timezone") as string;
+
+      console.log("Creating user in database...", {
+        supabase_auth_id: authData.user.id,
+        email: authData.user.email,
+        name: formData.get("name"),
+      });
 
       await prisma.user.create({
         data: {
@@ -57,14 +67,24 @@ export async function signup(formData: FormData) {
           default_currency: "BRL", // Default to Brazilian Real
         },
       });
+
+      console.log("User created successfully in database");
     } catch (error) {
       console.error("Error creating user in database:", error);
-      return { error: "Failed to create user profile" };
+      console.error("Error details:", JSON.stringify(error, null, 2));
+      // Delete the auth user if database insert fails
+      await supabase.auth.admin.deleteUser(authData.user.id);
+      return { error: `Failed to create user profile: ${error instanceof Error ? error.message : "Unknown error"}` };
     }
+
+    revalidatePath("/", "layout");
+    redirect("/dashboard");
   }
 
-  revalidatePath("/", "layout");
-  redirect("/dashboard");
+  // If email confirmation is required, return success without redirecting
+  if (emailConfirmationRequired) {
+    return { success: true };
+  }
 }
 
 export async function logout() {

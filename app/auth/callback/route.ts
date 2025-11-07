@@ -43,7 +43,7 @@ export async function GET(request: Request) {
             ? decodeURIComponent(timezoneCookie.split("=")[1])
             : "America/Sao_Paulo";
 
-          // Determine name from OAuth provider metadata
+          // Determine name from OAuth provider metadata or user signup data
           const name = data.user.user_metadata?.name ||
                        data.user.user_metadata?.full_name ||
                        data.user.email?.split("@")[0] ||
@@ -54,6 +54,7 @@ export async function GET(request: Request) {
             name,
             provider: data.user.app_metadata?.provider,
             user_metadata: data.user.user_metadata,
+            email_confirmed: data.user.email_confirmed_at,
           });
 
           existingUser = await prisma.user.create({

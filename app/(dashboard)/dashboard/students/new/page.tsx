@@ -136,9 +136,9 @@ export default function NewStudentPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="contractor_id">Contratante</Label>
-                  <Select name="contractor_id" disabled={loading}>
+                  <Select name="contractor_id" disabled={loading || contractors.length === 0}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Particular (nenhum)" />
+                      <SelectValue placeholder={contractors.length === 0 ? "Nenhum contratante cadastrado" : "Particular (nenhum)"} />
                     </SelectTrigger>
                     <SelectContent>
                       {contractors.map((contractor) => (
@@ -148,6 +148,13 @@ export default function NewStudentPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {contractors.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      <Link href="/dashboard/contractors/new" className="text-primary hover:underline">
+                        Cadastre um contratante
+                      </Link> para vincular alunos
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
