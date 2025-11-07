@@ -16,6 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { storeTimezoneForOAuth } from "@/lib/utils/timezone";
 
 function LoginForm() {
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +67,9 @@ function LoginForm() {
     setLoading(true);
     setError(null);
     setSuccess(null);
+
+    // Store timezone for OAuth callback
+    storeTimezoneForOAuth();
 
     const result = await loginWithGoogle();
 

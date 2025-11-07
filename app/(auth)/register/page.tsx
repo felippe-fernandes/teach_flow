@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Loader2, AlertCircle, Mail } from "lucide-react";
+import { storeTimezoneForOAuth } from "@/lib/utils/timezone";
 
 export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +26,10 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
     setSuccess(false);
+
+    // Auto-detect timezone
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    formData.append("timezone", timezone);
 
     const password = formData.get("password") as string;
     const confirmPassword = formData.get("confirmPassword") as string;
@@ -59,6 +64,9 @@ export default function RegisterPage() {
   async function handleGoogleSignup() {
     setLoading(true);
     setError(null);
+
+    // Store timezone for OAuth callback
+    storeTimezoneForOAuth();
 
     const result = await loginWithGoogle();
 
@@ -128,6 +136,21 @@ export default function RegisterPage() {
               required
               disabled={loading}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="phone_number">
+              Telefone <span className="text-muted-foreground text-xs">(Opcional)</span>
+            </Label>
+            <Input
+              id="phone_number"
+              name="phone_number"
+              type="tel"
+              placeholder="(11) 99999-9999"
+              disabled={loading}
+            />
+            <p className="text-xs text-muted-foreground">
+              Útil para contato com alunos e recuperação de conta
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Senha</Label>

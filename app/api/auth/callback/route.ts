@@ -17,13 +17,22 @@ export async function GET(request: Request) {
       });
 
       if (!existingUser) {
+        // Try to get timezone from cookie (set by client before OAuth redirect)
+        const cookies = request.headers.get("cookie") || "";
+        const timezoneCookie = cookies
+          .split(";")
+          .find((c) => c.trim().startsWith("user_timezone="));
+        const timezone = timezoneCookie
+          ? decodeURIComponent(timezoneCookie.split("=")[1])
+          : "America/Sao_Paulo";
+
         await prisma.user.create({
           data: {
             supabase_auth_id: data.user.id,
             email: data.user.email!,
             name: data.user.user_metadata?.name || data.user.email?.split("@")[0] || "User",
             google_id: data.user.user_metadata?.sub,
-            timezone: "America/Sao_Paulo",
+            timezone: timezone,
             default_currency: "BRL",
           },
         });

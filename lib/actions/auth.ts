@@ -44,13 +44,17 @@ export async function signup(formData: FormData) {
 
   if (authData.user) {
     try {
+      const phoneNumber = formData.get("phone_number") as string | null;
+      const timezone = formData.get("timezone") as string;
+
       await prisma.user.create({
         data: {
           supabase_auth_id: authData.user.id,
           email: authData.user.email!,
           name: formData.get("name") as string,
-          timezone: "America/Sao_Paulo",
-          default_currency: "BRL",
+          phone_number: phoneNumber && phoneNumber.trim() !== "" ? phoneNumber : null,
+          timezone: timezone || "America/Sao_Paulo", // Fallback to Brazil timezone
+          default_currency: "BRL", // Default to Brazilian Real
         },
       });
     } catch (error) {
