@@ -17,31 +17,38 @@ export async function GET(request: Request) {
       });
 
       if (!existingUser) {
-        // Try to get timezone from cookie (set by client before OAuth redirect)
-        const cookies = request.headers.get("cookie") || "";
-        const timezoneCookie = cookies
-          .split(";")
-          .find((c) => c.trim().startsWith("user_timezone="));
-        const timezone = timezoneCookie
-          ? decodeURIComponent(timezoneCookie.split("=")[1])
-          : "America/Sao_Paulo";
+        try {
+          // Try to get timezone from cookie (set by client before OAuth redirect)
+          const cookies = request.headers.get("cookie") || "";
+          const timezoneCookie = cookies
+            .split(";")
+            .find((c) => c.trim().startsWith("user_timezone="));
+          const timezone = timezoneCookie
+            ? decodeURIComponent(timezoneCookie.split("=")[1])
+            : "America/Sao_Paulo";
 
-        // Determine name from OAuth provider metadata
-        const name = data.user.user_metadata?.name ||
-                     data.user.user_metadata?.full_name ||
-                     data.user.email?.split("@")[0] ||
-                     "User";
+          // Determine name from OAuth provider metadata
+          const name = data.user.user_metadata?.name ||
+                       data.user.user_metadata?.full_name ||
+                       data.user.email?.split("@")[0] ||
+                       "User";
 
-        await prisma.user.create({
-          data: {
-            supabase_auth_id: data.user.id,
-            email: data.user.email!,
-            name: name,
-            google_id: data.user.app_metadata?.provider === "google" ? data.user.user_metadata?.sub : undefined,
-            timezone: timezone,
-            default_currency: "BRL",
-          },
-        });
+          await prisma.user.create({
+            data: {
+              supabase_auth_id: data.user.id,
+              email: data.user.email!,
+              name: name,
+              google_id: data.user.app_metadata?.provider === "google" ? data.user.user_metadata?.sub : undefined,
+              timezone: timezone,
+              default_currency: "BRL",
+            },
+          });
+
+          console.log("User created successfully in database:", data.user.email);
+        } catch (createError) {
+          console.error("Error creating user in database:", createError);
+          // Continue anyway - user exists in Supabase auth
+        }
       }
 
       const forwardedHost = request.headers.get("x-forwarded-host");

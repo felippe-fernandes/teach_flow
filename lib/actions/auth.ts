@@ -93,6 +93,71 @@ export async function loginWithGoogle() {
   }
 }
 
+export async function linkGoogleProvider() {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.auth.linkIdentity({
+    provider: "google",
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/dashboard/profile`,
+    },
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  if (data.url) {
+    redirect(data.url);
+  }
+
+  return { success: true };
+}
+
+export async function unlinkProvider(provider: string) {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  // Get all identities to ensure user has at least 2 before unlinking
+  const identities = user.identities || [];
+
+  if (identities.length <= 1) {
+    return { error: "Você deve manter pelo menos um método de login ativo" };
+  }
+
+  const identity = identities.find(id => id.provider === provider);
+
+  if (!identity) {
+    return { error: "Provedor não encontrado" };
+  }
+
+  const { error } = await supabase.auth.unlinkIdentity(identity);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard/profile");
+  return { success: true };
+}
+
+export async function getLinkedProviders() {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  return user.identities || [];
+}
+
 
 export async function resetPassword(formData: FormData) {
   const supabase = await createClient();
@@ -135,9 +200,35 @@ export async function getUser() {
     return null;
   }
 
-  const dbUser = await prisma.user.findUnique({
+  let dbUser = await prisma.user.findUnique({
     where: { supabase_auth_id: user.id },
   });
+
+  // If user exists in Supabase Auth but not in Prisma, create them
+  if (!dbUser && user.email) {
+    try {
+      const name = user.user_metadata?.name ||
+                   user.user_metadata?.full_name ||
+                   user.email.split("@")[0] ||
+                   "User";
+
+      dbUser = await prisma.user.create({
+        data: {
+          supabase_auth_id: user.id,
+          email: user.email,
+          name: name,
+          google_id: user.app_metadata?.provider === "google" ? user.user_metadata?.sub : undefined,
+          timezone: "America/Sao_Paulo",
+          default_currency: "BRL",
+        },
+      });
+
+      console.log("User synced from Supabase Auth to database:", user.email);
+    } catch (error) {
+      console.error("Error syncing user to database:", error);
+      return null;
+    }
+  }
 
   return dbUser;
 }
