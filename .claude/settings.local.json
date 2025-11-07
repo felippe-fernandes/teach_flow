@@ -18,7 +18,8 @@
       "Bash(npm ls:*)",
       "Bash(npx @next/codemod@canary upgrade:*)",
       "Bash(npm run build:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

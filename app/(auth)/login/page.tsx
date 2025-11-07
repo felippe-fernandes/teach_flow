@@ -34,6 +34,8 @@ function LoginForm() {
       setSuccess(
         "Verifique seu email para confirmar sua conta antes de fazer login."
       );
+    } else if (message === "password_updated") {
+      setSuccess("Senha atualizada com sucesso! Faça login com sua nova senha.");
     } else if (errorParam) {
       setError(decodeURIComponent(errorParam));
     }
