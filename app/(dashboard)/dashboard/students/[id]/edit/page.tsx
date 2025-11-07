@@ -101,12 +101,19 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="contractor_id">Contratante</Label>
-                  <Select name="contractor_id" defaultValue={student.contractor_id || undefined} disabled={loading}>
-                    <SelectTrigger><SelectValue placeholder="Particular" /></SelectTrigger>
+                  <Select name="contractor_id" defaultValue={student.contractor_id || undefined} disabled={loading || contractors.length === 0}>
+                    <SelectTrigger><SelectValue placeholder={contractors.length === 0 ? "Nenhum contratante cadastrado" : "Particular"} /></SelectTrigger>
                     <SelectContent>
                       {contractors.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  {contractors.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      <Link href="/dashboard/contractors/new" className="text-primary hover:underline">
+                        Cadastre um contratante
+                      </Link> para vincular alunos
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>

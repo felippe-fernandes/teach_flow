@@ -72,21 +72,35 @@ export default function NewClassPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="student_id">Aluno <span className="text-destructive">*</span></Label>
-                  <Select name="student_id" required disabled={loading}>
-                    <SelectTrigger><SelectValue placeholder="Selecione o aluno" /></SelectTrigger>
+                  <Select name="student_id" required disabled={loading || students.length === 0}>
+                    <SelectTrigger><SelectValue placeholder={students.length === 0 ? "Nenhum aluno cadastrado" : "Selecione o aluno"} /></SelectTrigger>
                     <SelectContent>
                       {students.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  {students.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      <Link href="/dashboard/students/new" className="text-primary hover:underline">
+                        Cadastre um aluno
+                      </Link> para agendar aulas
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="contractor_id">Contratante <span className="text-destructive">*</span></Label>
-                  <Select name="contractor_id" required disabled={loading}>
-                    <SelectTrigger><SelectValue placeholder="Selecione o contratante" /></SelectTrigger>
+                  <Select name="contractor_id" required disabled={loading || contractors.length === 0}>
+                    <SelectTrigger><SelectValue placeholder={contractors.length === 0 ? "Nenhum contratante cadastrado" : "Selecione o contratante"} /></SelectTrigger>
                     <SelectContent>
                       {contractors.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  {contractors.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      <Link href="/dashboard/contractors/new" className="text-primary hover:underline">
+                        Cadastre um contratante
+                      </Link> para agendar aulas
+                    </p>
+                  )}
                 </div>
               </div>
 
