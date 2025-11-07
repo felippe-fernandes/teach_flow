@@ -135,9 +135,35 @@ export async function getUser() {
     return null;
   }
 
-  const dbUser = await prisma.user.findUnique({
+  let dbUser = await prisma.user.findUnique({
     where: { supabase_auth_id: user.id },
   });
+
+  // If user exists in Supabase Auth but not in Prisma, create them
+  if (!dbUser && user.email) {
+    try {
+      const name = user.user_metadata?.name ||
+                   user.user_metadata?.full_name ||
+                   user.email.split("@")[0] ||
+                   "User";
+
+      dbUser = await prisma.user.create({
+        data: {
+          supabase_auth_id: user.id,
+          email: user.email,
+          name: name,
+          google_id: user.app_metadata?.provider === "google" ? user.user_metadata?.sub : undefined,
+          timezone: "America/Sao_Paulo",
+          default_currency: "BRL",
+        },
+      });
+
+      console.log("User synced from Supabase Auth to database:", user.email);
+    } catch (error) {
+      console.error("Error syncing user to database:", error);
+      return null;
+    }
+  }
 
   return dbUser;
 }
