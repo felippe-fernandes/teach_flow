@@ -79,6 +79,7 @@ function LoginForm() {
     }
   }
 
+
   return (
     <Card>
       <CardHeader>
@@ -178,7 +179,7 @@ function LoginForm() {
               />
             </svg>
           )}
-          {loading ? "Conectando..." : "Google"}
+          {loading ? "Conectando..." : "Continuar com Google"}
         </Button>
       </CardContent>
       <CardFooter className="flex justify-center">

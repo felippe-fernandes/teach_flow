@@ -76,6 +76,7 @@ export default function RegisterPage() {
     }
   }
 
+
   if (success) {
     return (
       <Card>
@@ -226,7 +227,7 @@ export default function RegisterPage() {
               />
             </svg>
           )}
-          {loading ? "Conectando..." : "Google"}
+          {loading ? "Conectando..." : "Continuar com Google"}
         </Button>
 
         <p className="text-xs text-muted-foreground mt-4 text-center">

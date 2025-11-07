@@ -26,12 +26,18 @@ export async function GET(request: Request) {
           ? decodeURIComponent(timezoneCookie.split("=")[1])
           : "America/Sao_Paulo";
 
+        // Determine name from OAuth provider metadata
+        const name = data.user.user_metadata?.name ||
+                     data.user.user_metadata?.full_name ||
+                     data.user.email?.split("@")[0] ||
+                     "User";
+
         await prisma.user.create({
           data: {
             supabase_auth_id: data.user.id,
             email: data.user.email!,
-            name: data.user.user_metadata?.name || data.user.email?.split("@")[0] || "User",
-            google_id: data.user.user_metadata?.sub,
+            name: name,
+            google_id: data.user.app_metadata?.provider === "google" ? data.user.user_metadata?.sub : undefined,
             timezone: timezone,
             default_currency: "BRL",
           },
