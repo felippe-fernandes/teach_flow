@@ -1,4 +1,7 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { getUser } from '../auth';
+import { prisma } from '@/lib/prisma';
+import { getContractors, createContractor } from '../contractors';
 
 // Mock Prisma
 jest.mock('@/lib/prisma', () => ({
@@ -18,6 +21,9 @@ jest.mock('../auth', () => ({
   getUser: jest.fn(),
 }));
 
+const mockGetUser = getUser as jest.MockedFunction<typeof getUser>;
+const mockPrisma = prisma as jest.Mocked<typeof prisma>;
+
 describe('Contractors Actions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -25,16 +31,12 @@ describe('Contractors Actions', () => {
 
   describe('Security Tests', () => {
     it('should validate user_id when getting contractors', async () => {
-      const { getUser } = require('../auth');
-      const { prisma } = require('@/lib/prisma');
-      const { getContractors } = require('../contractors');
-
-      getUser.mockResolvedValue({ id: 'user-123', email: 'test@test.com' });
-      prisma.contractor.findMany.mockResolvedValue([]);
+      mockGetUser.mockResolvedValue({ id: 'user-123', email: 'test@test.com', name: 'Test', phone_number: null, timezone: 'UTC', default_currency: 'USD', two_factor_enabled: false, totp_secret: null, notification_preferences: null, google_id: null, supabase_auth_id: 'auth-123', created_at: new Date(), updated_at: new Date() });
+      mockPrisma.contractor.findMany.mockResolvedValue([]);
 
       await getContractors();
 
-      expect(prisma.contractor.findMany).toHaveBeenCalledWith(
+      expect(mockPrisma.contractor.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({ user_id: 'user-123' }),
         })
@@ -42,10 +44,7 @@ describe('Contractors Actions', () => {
     });
 
     it('should prevent creating contractor without authentication', async () => {
-      const { getUser } = require('../auth');
-      const { createContractor } = require('../contractors');
-
-      getUser.mockResolvedValue(null);
+      mockGetUser.mockResolvedValue(null);
 
       const formData = new FormData();
       const result = await createContractor(formData);
@@ -54,12 +53,8 @@ describe('Contractors Actions', () => {
     });
 
     it('should include user_id when creating contractor', async () => {
-      const { getUser } = require('../auth');
-      const { prisma } = require('@/lib/prisma');
-      const { createContractor } = require('../contractors');
-
-      getUser.mockResolvedValue({ id: 'user-123' });
-      prisma.contractor.create.mockResolvedValue({ id: 'contractor-1' });
+      mockGetUser.mockResolvedValue({ id: 'user-123', email: 'test@test.com', name: 'Test', phone_number: null, timezone: 'UTC', default_currency: 'USD', two_factor_enabled: false, totp_secret: null, notification_preferences: null, google_id: null, supabase_auth_id: 'auth-123', created_at: new Date(), updated_at: new Date() });
+      mockPrisma.contractor.create.mockResolvedValue({ id: 'contractor-1', user_id: 'user-123', name: 'Test', contact_info: null, default_hourly_rate: 50, currency: 'BRL', payment_frequency: 'monthly', payment_terms_days: 0, min_cancellation_notice_hours: 24, cancellation_penalty_rate: 0, notes: null, created_at: new Date(), updated_at: new Date() } as never);
 
       const formData = new FormData();
       formData.append('name', 'Test Contractor');
@@ -68,7 +63,7 @@ describe('Contractors Actions', () => {
 
       await createContractor(formData);
 
-      expect(prisma.contractor.create).toHaveBeenCalledWith(
+      expect(mockPrisma.contractor.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ user_id: 'user-123' }),
         })
@@ -78,12 +73,8 @@ describe('Contractors Actions', () => {
 
   describe('Business Logic Tests', () => {
     it('should create contractor with correct financial rules', async () => {
-      const { getUser } = require('../auth');
-      const { prisma } = require('@/lib/prisma');
-      const { createContractor } = require('../contractors');
-
-      getUser.mockResolvedValue({ id: 'user-123' });
-      prisma.contractor.create.mockResolvedValue({ id: 'contractor-1' });
+      mockGetUser.mockResolvedValue({ id: 'user-123', email: 'test@test.com', name: 'Test', phone_number: null, timezone: 'UTC', default_currency: 'USD', two_factor_enabled: false, totp_secret: null, notification_preferences: null, google_id: null, supabase_auth_id: 'auth-123', created_at: new Date(), updated_at: new Date() });
+      mockPrisma.contractor.create.mockResolvedValue({ id: 'contractor-1', user_id: 'user-123', name: 'School Alpha', contact_info: null, default_hourly_rate: 100.50, currency: 'USD', payment_frequency: 'monthly', payment_terms_days: 30, min_cancellation_notice_hours: 24, cancellation_penalty_rate: 0, notes: null, created_at: new Date(), updated_at: new Date() } as never);
 
       const formData = new FormData();
       formData.append('name', 'School Alpha');
@@ -94,7 +85,7 @@ describe('Contractors Actions', () => {
 
       await createContractor(formData);
 
-      expect(prisma.contractor.create).toHaveBeenCalledWith(
+      expect(mockPrisma.contractor.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             name: 'School Alpha',

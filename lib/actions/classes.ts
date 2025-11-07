@@ -5,10 +5,13 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "./auth";
 
-export async function getClasses(filters?: { startDate?: Date; endDate?: Date; studentId?: string; contractorId?: string; status?: string }) {
+type ClassFilters = { startDate?: Date; endDate?: Date; studentId?: string; contractorId?: string; status?: string };
+
+export async function getClasses(filters?: ClassFilters) {
   const user = await getUser();
   if (!user) redirect("/login");
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = { user_id: user.id };
 
   if (filters?.studentId) where.student_id = filters.studentId;

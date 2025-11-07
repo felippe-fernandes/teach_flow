@@ -1,10 +1,8 @@
-import Link from "next/link";
 import { getPayments, getFinancialSummary } from "@/lib/actions/payments";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, TrendingUp, Clock, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 export default async function PaymentsPage() {
   const payments = await getPayments();
@@ -95,7 +93,7 @@ export default async function PaymentsPage() {
                 <div key={payment.id} className="flex items-center justify-between border-b pb-4 last:border-0">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium">{payment.student.name}</p>
+                      <p className="font-medium">{payment.student?.name || "Aluno não especificado"}</p>
                       <Badge variant={statusMap[payment.status]?.variant}>
                         {statusMap[payment.status]?.label}
                       </Badge>
