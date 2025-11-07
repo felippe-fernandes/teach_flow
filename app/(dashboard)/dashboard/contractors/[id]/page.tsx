@@ -5,19 +5,19 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Edit, Trash2, Building2, Mail, Phone, Globe, User } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Mail, Phone, Globe, User } from "lucide-react";
 
 export default async function ContractorDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const contractor = await getContractor(params.id);
+  const { id } = await params;
+  const contractor = await getContractor(id);
 
   if (!contractor) {
     notFound();
@@ -35,7 +35,7 @@ export default async function ContractorDetailPage({
 
   async function handleDelete() {
     "use server";
-    const result = await deleteContractor(params.id);
+    const result = await deleteContractor(id);
     if (result?.success) {
       redirect("/dashboard/contractors");
     }

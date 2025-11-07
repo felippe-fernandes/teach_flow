@@ -5,17 +5,20 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "./auth";
 
-export async function getStudents(filters?: {
+type StudentFilters = {
   status?: string;
   contractorId?: string;
   search?: string;
-}) {
+};
+
+export async function getStudents(filters?: StudentFilters) {
   const user = await getUser();
 
   if (!user) {
     redirect("/login");
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {
     user_id: user.id,
   };
@@ -120,7 +123,7 @@ export async function createStudent(formData: FormData) {
 
   // Package details
   const hasPackage = formData.get("has_package") === "true";
-  let packageDetails = null;
+  let packageDetails: object | null = null;
 
   if (hasPackage) {
     packageDetails = {
@@ -146,7 +149,7 @@ export async function createStudent(formData: FormData) {
         status: status || "active",
         learning_goals: learningGoals || null,
         notes: notes || null,
-        package_details: packageDetails,
+        package_details: packageDetails as never,
       },
     });
 
@@ -206,7 +209,7 @@ export async function updateStudent(id: string, formData: FormData) {
         status: status || "active",
         learning_goals: learningGoals || null,
         notes: notes || null,
-        package_details: packageDetails,
+        package_details: packageDetails as never,
       },
     });
 
