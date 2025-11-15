@@ -23,21 +23,45 @@ export async function getClasses(filters?: ClassFilters) {
     if (filters.endDate) where.start_time.lte = filters.endDate;
   }
 
-  return await prisma.class.findMany({
+  const classes = await prisma.class.findMany({
     where,
     include: { student: true, contractor: true },
     orderBy: { start_time: "asc" },
   });
+
+  // Convert Decimal fields to numbers for serialization
+  return classes.map((classRecord) => ({
+    ...classRecord,
+    custom_rate: classRecord.custom_rate?.toNumber() ?? null,
+    contractor: {
+      ...classRecord.contractor,
+      default_hourly_rate: classRecord.contractor.default_hourly_rate.toNumber(),
+      cancellation_penalty_rate: classRecord.contractor.cancellation_penalty_rate.toNumber(),
+    },
+  }));
 }
 
 export async function getClass(id: string) {
   const user = await getUser();
   if (!user) redirect("/login");
 
-  return await prisma.class.findFirst({
+  const classRecord = await prisma.class.findFirst({
     where: { id, user_id: user.id },
     include: { student: true, contractor: true },
   });
+
+  if (!classRecord) return null;
+
+  // Convert Decimal fields to numbers for serialization
+  return {
+    ...classRecord,
+    custom_rate: classRecord.custom_rate?.toNumber() ?? null,
+    contractor: {
+      ...classRecord.contractor,
+      default_hourly_rate: classRecord.contractor.default_hourly_rate.toNumber(),
+      cancellation_penalty_rate: classRecord.contractor.cancellation_penalty_rate.toNumber(),
+    },
+  };
 }
 
 export async function createClass(formData: FormData) {
