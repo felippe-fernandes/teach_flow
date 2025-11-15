@@ -1,23 +1,24 @@
 "use client";
-// @ts-nocheck - Next.js 15 type checking issue with client components and dynamic params
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { getStudent, updateStudent } from "@/lib/actions/students";
-import { getContractors } from "@/lib/actions/contractors";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { ContractorSelect } from "@/components/forms/contractor-select";
+import { getContractors } from "@/lib/actions/contractors";
+import { getStudent, updateStudent } from "@/lib/actions/students";
 import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { use, useEffect, useState } from "react";
 
 type Student = Awaited<ReturnType<typeof getStudent>>;
 type Contractor = Awaited<ReturnType<typeof getContractors>>[0];
 
-export default function EditStudentPage({ params }: { params: { id: string } }) {
+export default function EditStudentPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,7 +28,7 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
 
   useEffect(() => {
     async function loadData() {
-      const [studentData, contractorsData] = await Promise.all([getStudent(params.id), getContractors()]);
+      const [studentData, contractorsData] = await Promise.all([getStudent(id), getContractors()]);
       if (!studentData) {
         router.push("/dashboard/students");
       } else {
@@ -38,7 +39,7 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
       }
     }
     loadData();
-  }, [params.id, router]);
+  }, [id, router]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -47,14 +48,16 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
 
     const formData = new FormData(e.currentTarget);
     formData.append("has_package", hasPackage.toString());
+    // Append id to formData since server actions can't capture closure variables properly
+    formData.append("id", id);
 
-    const result = await updateStudent(params.id, formData);
+    const result = await updateStudent(id, formData);
 
     if (result?.error) {
       setError(result.error);
       setLoading(false);
     } else if (result?.success) {
-      router.push(`/dashboard/students/${params.id}`);
+      router.push(`/dashboard/students/${id}`);
     }
   }
 
@@ -68,7 +71,7 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center gap-4">
-        <Link href={`/dashboard/students/${params.id}`}><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
+        <Link href={`/dashboard/students/${id}`}><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
         <div><h1 className="text-3xl font-bold">Editar Aluno</h1><p className="text-muted-foreground">{student.name}</p></div>
       </div>
 
@@ -101,19 +104,11 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="contractor_id">Contratante</Label>
-                  <Select name="contractor_id" defaultValue={student.contractor_id || undefined} disabled={loading || contractors.length === 0}>
-                    <SelectTrigger><SelectValue placeholder={contractors.length === 0 ? "Nenhum contratante cadastrado" : "Particular"} /></SelectTrigger>
-                    <SelectContent>
-                      {contractors.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  {contractors.length === 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      <Link href="/dashboard/contractors/new" className="text-primary hover:underline">
-                        Cadastre um contratante
-                      </Link> para vincular alunos
-                    </p>
-                  )}
+                  <ContractorSelect
+                    contractors={contractors}
+                    defaultValue={student.contractor_id || "__particular__"}
+                    disabled={loading}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -181,7 +176,7 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
 
           <div className="flex gap-4">
             <Button type="submit" disabled={loading}>{loading ? "Salvando..." : "Salvar"}</Button>
-            <Link href={`/dashboard/students/${params.id}`}><Button type="button" variant="outline" disabled={loading}>Cancelar</Button></Link>
+            <Link href={`/dashboard/students/${id}`}><Button type="button" variant="outline" disabled={loading}>Cancelar</Button></Link>
           </div>
         </div>
       </form>
