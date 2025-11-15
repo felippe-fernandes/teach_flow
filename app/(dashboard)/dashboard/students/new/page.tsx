@@ -9,20 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ContractorSelect } from "@/components/forms/contractor-select";
 import { ArrowLeft } from "lucide-react";
 
 type Contractor = Awaited<ReturnType<typeof getContractors>>[0];
@@ -136,25 +125,11 @@ export default function NewStudentPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="contractor_id">Contratante</Label>
-                  <Select name="contractor_id" disabled={loading || contractors.length === 0}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={contractors.length === 0 ? "Nenhum contratante cadastrado" : "Particular (nenhum)"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {contractors.map((contractor) => (
-                        <SelectItem key={contractor.id} value={contractor.id}>
-                          {contractor.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {contractors.length === 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      <Link href="/dashboard/contractors/new" className="text-primary hover:underline">
-                        Cadastre um contratante
-                      </Link> para vincular alunos
-                    </p>
-                  )}
+                  <ContractorSelect
+                    contractors={contractors}
+                    defaultValue="__particular__"
+                    disabled={loading}
+                  />
                 </div>
               </div>
             </CardContent>

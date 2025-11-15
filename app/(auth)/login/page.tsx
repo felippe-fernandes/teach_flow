@@ -71,12 +71,8 @@ function LoginForm() {
     // Store timezone for OAuth callback
     storeTimezoneForOAuth();
 
-    const result = await loginWithGoogle();
-
-    if (result?.error) {
-      setError("Erro ao fazer login com Google. Tente novamente.");
-      setLoading(false);
-    }
+    // loginWithGoogle redirects automatically, no need to check result
+    await loginWithGoogle();
   }
 
 

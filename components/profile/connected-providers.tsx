@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { linkGoogleProvider, unlinkProvider } from "@/lib/actions/auth";
 import { Link2, Unlink } from "lucide-react";
+import { useState } from "react";
 
 type Identity = {
   id: string;
@@ -91,7 +91,7 @@ export function ConnectedProviders({ identities }: ConnectedProvidersProps) {
         <div className="space-y-3">
           {identities.map((identity) => (
             <div
-              key={identity.id}
+              key={identity.provider}
               className="flex items-center justify-between p-3 border rounded-lg"
             >
               <div className="flex items-center gap-3">
