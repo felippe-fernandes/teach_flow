@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { auth, signIn, signOut } from "@/auth";
+import { auth, signIn, signOut } from "@/lib/auth";
 
 export async function login(formData: FormData) {
   const email = formData.get("email") as string;
