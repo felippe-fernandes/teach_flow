@@ -104,7 +104,16 @@ export async function createContractor(formData: FormData) {
     });
 
     revalidatePath("/dashboard/contractors");
-    return { success: true, contractor };
+
+    // Convert Decimal fields to numbers for serialization
+    return {
+      success: true,
+      contractor: {
+        ...contractor,
+        default_hourly_rate: contractor.default_hourly_rate.toNumber(),
+        cancellation_penalty_rate: contractor.cancellation_penalty_rate.toNumber(),
+      },
+    };
   } catch (error) {
     console.error("Error creating contractor:", error);
     return { error: "Failed to create contractor" };
@@ -155,7 +164,16 @@ export async function updateContractor(id: string, formData: FormData) {
 
     revalidatePath("/dashboard/contractors");
     revalidatePath(`/dashboard/contractors/${id}`);
-    return { success: true, contractor };
+
+    // Convert Decimal fields to numbers for serialization
+    return {
+      success: true,
+      contractor: {
+        ...contractor,
+        default_hourly_rate: contractor.default_hourly_rate.toNumber(),
+        cancellation_penalty_rate: contractor.cancellation_penalty_rate.toNumber(),
+      },
+    };
   } catch (error) {
     console.error("Error updating contractor:", error);
     return { error: "Failed to update contractor" };
