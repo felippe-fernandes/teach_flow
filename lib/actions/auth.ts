@@ -166,3 +166,50 @@ export async function getLinkedProviders() {
     return [];
   }
 }
+
+export async function linkGoogleProvider() {
+  try {
+    await signIn("google", {
+      redirectTo: "/dashboard/profile",
+    });
+  } catch (error: any) {
+    console.error("Error linking Google provider:", error);
+    return { error: error.message || "Erro ao vincular conta Google" };
+  }
+}
+
+export async function unlinkProvider(provider: string) {
+  try {
+    const user = await getUser();
+    if (!user) {
+      return { error: "Usuário não autenticado" };
+    }
+
+    // Delete the account link
+    await prisma.account.deleteMany({
+      where: {
+        userId: user.id,
+        provider: provider,
+      },
+    });
+
+    // If unlinking Google, clear Google Calendar tokens
+    if (provider === "google") {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          google_access_token: null,
+          google_refresh_token: null,
+          google_token_expiry: null,
+          google_calendar_sync: false,
+        },
+      });
+    }
+
+    revalidatePath("/dashboard/profile");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error unlinking provider:", error);
+    return { error: error.message || "Erro ao desvincular conta" };
+  }
+}

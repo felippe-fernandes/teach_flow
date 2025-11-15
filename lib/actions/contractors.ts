@@ -21,7 +21,12 @@ export async function getContractors() {
     },
   });
 
-  return contractors;
+  // Convert Decimal fields to numbers for serialization
+  return contractors.map((contractor) => ({
+    ...contractor,
+    default_hourly_rate: contractor.default_hourly_rate.toNumber(),
+    cancellation_penalty_rate: contractor.cancellation_penalty_rate.toNumber(),
+  }));
 }
 
 export async function getContractor(id: string) {
@@ -51,7 +56,12 @@ export async function getContractor(id: string) {
     return null;
   }
 
-  return contractor;
+  // Convert Decimal fields to numbers for serialization
+  return {
+    ...contractor,
+    default_hourly_rate: contractor.default_hourly_rate.toNumber(),
+    cancellation_penalty_rate: contractor.cancellation_penalty_rate.toNumber(),
+  };
 }
 
 export async function createContractor(formData: FormData) {
