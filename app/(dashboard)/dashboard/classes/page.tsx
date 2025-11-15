@@ -49,7 +49,7 @@ export default async function ClassesPage() {
                       <CardTitle>{cls.student.name}</CardTitle>
                       <Badge variant={statusMap[cls.status]?.variant}>{statusMap[cls.status]?.label}</Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground">{cls.contractor.name}</p>
+                    <p className="text-sm text-muted-foreground">{cls.contractor?.name || "Particular"}</p>
                   </div>
                 </div>
               </CardHeader>

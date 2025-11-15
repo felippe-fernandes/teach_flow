@@ -68,12 +68,8 @@ export default function RegisterPage() {
     // Store timezone for OAuth callback
     storeTimezoneForOAuth();
 
-    const result = await loginWithGoogle();
-
-    if (result?.error) {
-      setError("Erro ao cadastrar com Google. Tente novamente.");
-      setLoading(false);
-    }
+    // loginWithGoogle redirects automatically, no need to check result
+    await loginWithGoogle();
   }
 
 
