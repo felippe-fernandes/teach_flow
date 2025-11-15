@@ -1,12 +1,14 @@
 # OAuth Setup Guide - Google Sign In
 
-Este guia explica como configurar o login com Google no TeachFlow usando Supabase.
+> **Languages**: **English** | [Português (Brasil)](./OAUTH_SETUP.PT.md)
 
-## Status da Implementação
+This guide explains how to set up Google Sign In for TeachFlow using NextAuth.js.
 
-✅ **Código implementado** - Google OAuth está completamente implementado no código da aplicação.
+## Implementation Status
 
-⚠️ **Configuração necessária** - Você precisa configurar o Google OAuth no Google Cloud Console e no Supabase Dashboard.
+✅ **Code implemented** - Google OAuth is fully implemented in the application code using NextAuth.js v5.
+
+⚠️ **Configuration required** - You need to configure Google OAuth in the Google Cloud Console and add the credentials to `.env.local`.
 
 ---
 
@@ -14,34 +16,36 @@ Este guia explica como configurar o login com Google no TeachFlow usando Supabas
 
 ### 1. Google Cloud Console Setup
 
-1. Acesse o [Google Cloud Console](https://console.cloud.google.com/)
-2. Crie um novo projeto ou selecione um existente
-3. Vá para **APIs & Services** → **Credentials**
-4. Clique em **Create Credentials** → **OAuth 2.0 Client ID**
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Navigate to **APIs & Services** → **Credentials**
+4. Click **Create Credentials** → **OAuth 2.0 Client ID**
 
 ### 2. Configure OAuth Consent Screen
 
-Se ainda não configurou a tela de consentimento:
+If you haven't configured the consent screen yet:
 
-1. Clique em **Configure Consent Screen**
-2. Escolha o tipo:
-   - **External**: Para qualquer usuário com conta Google (recomendado para produção)
-   - **Internal**: Apenas para usuários do seu Google Workspace
-3. Preencha as informações obrigatórias:
+1. Click **Configure Consent Screen**
+2. Choose the type:
+   - **External**: For any user with a Google account (recommended for production)
+   - **Internal**: Only for users in your Google Workspace
+3. Fill in the required information:
    - **App name**: TeachFlow
-   - **User support email**: seu email
-   - **Developer contact email**: seu email
-4. Em **Scopes**, adicione:
+   - **User support email**: your email
+   - **Developer contact email**: your email
+4. In **Scopes**, add:
    - `email`
    - `profile`
    - `openid`
-5. Clique em **Save and Continue**
-6. Adicione usuários de teste (se em modo de teste)
-7. Clique em **Save and Continue** até finalizar
+   - `https://www.googleapis.com/auth/calendar` (for Google Calendar integration)
+   - `https://www.googleapis.com/auth/calendar.events` (for Calendar events)
+5. Click **Save and Continue**
+6. Add test users (if in testing mode)
+7. Click **Save and Continue** until finished
 
 ### 3. Create OAuth 2.0 Client ID
 
-1. Volte para **Credentials** → **Create Credentials** → **OAuth 2.0 Client ID**
+1. Return to **Credentials** → **Create Credentials** → **OAuth 2.0 Client ID**
 2. Configure:
    - **Application type**: Web application
    - **Name**: TeachFlow Web
@@ -49,245 +53,317 @@ Se ainda não configurou a tela de consentimento:
 3. **Authorized JavaScript origins**:
    ```
    http://localhost:3000
-   https://seu-dominio.com
-   https://seu-app.vercel.app
+   https://your-domain.com
+   https://your-app.vercel.app
    ```
 
 4. **Authorized redirect URIs**:
    ```
-   https://seu-projeto.supabase.co/auth/v1/callback
+   http://localhost:3000/api/auth/callback/google
+   https://your-domain.com/api/auth/callback/google
+   https://your-app.vercel.app/api/auth/callback/google
    ```
 
-   💡 **Como encontrar sua URL de callback do Supabase**:
-   - Vá para [Supabase Dashboard](https://app.supabase.com)
-   - Selecione seu projeto
-   - Vá para **Authentication** → **Providers** → **Google**
-   - Copie a **Callback URL (for OAuth)** que aparece lá
+   💡 **Important**: With NextAuth, the redirect URI is always `[APP_URL]/api/auth/callback/google`
 
-5. Clique em **Create**
-6. **IMPORTANTE**: Copie o **Client ID** e **Client Secret** gerados
+5. Click **Create**
+6. **IMPORTANT**: Copy the generated **Client ID** and **Client Secret**
 
-### 4. Supabase Dashboard Setup
+### 4. Environment Variables
 
-1. Acesse seu [Supabase Dashboard](https://app.supabase.com)
-2. Selecione seu projeto
-3. Vá para **Authentication** → **Providers**
-4. Encontre **Google** na lista
-5. Clique em **Enable**
-6. Configure:
-   - **Google enabled**: Toggle para ON
-   - **Client ID (for OAuth)**: Cole o Client ID do Google Cloud Console
-   - **Client Secret (for OAuth)**: Cole o Client Secret do Google Cloud Console
-   - **Authorized Client IDs**: Deixe vazio (não é necessário para web)
-7. Clique em **Save**
-
-### 5. Variáveis de Ambiente
-
-Certifique-se de que seu `.env.local` contém:
+Add to your `.env.local`:
 
 ```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-anon-key
+# NextAuth
+NEXTAUTH_URL=http://localhost:3000  # development
+# NEXTAUTH_URL=https://your-domain.com  # production
+NEXTAUTH_SECRET=generate-a-random-secret-here
 
-# App URL (usado para OAuth redirects)
-NEXT_PUBLIC_APP_URL=http://localhost:3000  # desenvolvimento
-# NEXT_PUBLIC_APP_URL=https://seu-dominio.com  # produção
+# Google OAuth
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+
+# App URL
+NEXT_PUBLIC_APP_URL=http://localhost:3000  # development
+# NEXT_PUBLIC_APP_URL=https://your-domain.com  # production
 ```
 
-### 6. Teste em Desenvolvimento
+### 5. Generate NEXTAUTH_SECRET
 
-1. Inicie sua aplicação:
+Run in your terminal:
+
+```bash
+openssl rand -base64 32
+```
+
+Copy the result and paste it in `NEXTAUTH_SECRET`.
+
+### 6. Test in Development
+
+1. Start your application:
    ```bash
    npm run dev
    ```
 
-2. Acesse `http://localhost:3000/login` ou `http://localhost:3000/register`
+2. Go to `http://localhost:3000/login` or `http://localhost:3000/register`
 
-3. Clique no botão **Continuar com Google**
+3. Click the **Continue with Google** button
 
-4. Você será redirecionado para a página de login do Google
+4. You will be redirected to the Google login page
 
-5. Selecione sua conta Google
+5. Select your Google account
 
-6. Após autenticação bem-sucedida, você será redirecionado para `/dashboard`
+6. After successful authentication, you will be redirected to `/dashboard`
 
 ---
 
-## 🚀 Deploy em Produção (Vercel)
+## 🚀 Deploy to Production (Vercel)
 
-### 1. Configure Variáveis de Ambiente na Vercel
+### 1. Configure Environment Variables on Vercel
 
-1. Acesse seu projeto no [Vercel Dashboard](https://vercel.com/)
-2. Vá para **Settings** → **Environment Variables**
-3. Adicione:
-   - `NEXT_PUBLIC_SUPABASE_URL`: URL do seu projeto Supabase
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Anon key do Supabase
-   - `NEXT_PUBLIC_APP_URL`: URL do seu app na Vercel (ex: `https://teachflow.vercel.app`)
+1. Go to your project on [Vercel Dashboard](https://vercel.com/)
+2. Navigate to **Settings** → **Environment Variables**
+3. Add:
+   - `NEXTAUTH_URL`: Your app's URL on Vercel (e.g., `https://teachflow.vercel.app`)
+   - `NEXTAUTH_SECRET`: The same secret you generated (use `openssl rand -base64 32`)
+   - `GOOGLE_CLIENT_ID`: Client ID from Google Cloud Console
+   - `GOOGLE_CLIENT_SECRET`: Client Secret from Google Cloud Console
+   - `NEXT_PUBLIC_APP_URL`: Your app's URL on Vercel
+   - `DATABASE_URL`: Neon connection string (pooled)
+   - `DIRECT_URL`: Neon direct connection string
 
-### 2. Atualize URLs Autorizadas no Google Cloud Console
+### 2. Update Authorized URLs in Google Cloud Console
 
-1. Volte ao [Google Cloud Console](https://console.cloud.google.com/)
-2. Vá para **APIs & Services** → **Credentials**
-3. Clique no seu OAuth 2.0 Client ID
-4. Em **Authorized JavaScript origins**, adicione:
+1. Return to [Google Cloud Console](https://console.cloud.google.com/)
+2. Navigate to **APIs & Services** → **Credentials**
+3. Click on your OAuth 2.0 Client ID
+4. In **Authorized JavaScript origins**, add:
    ```
-   https://seu-app.vercel.app
-   https://seu-dominio-custom.com  (se tiver domínio próprio)
+   https://your-app.vercel.app
+   https://your-custom-domain.com  (if you have a custom domain)
    ```
-5. **Não precisa adicionar nada em Authorized redirect URIs** - a URL do Supabase já está lá e funciona para produção também
-6. Clique em **Save**
+5. In **Authorized redirect URIs**, add:
+   ```
+   https://your-app.vercel.app/api/auth/callback/google
+   https://your-custom-domain.com/api/auth/callback/google  (if you have a custom domain)
+   ```
+6. Click **Save**
 
 ### 3. Deploy
 
-O projeto já está configurado para fazer deploy automático apenas do branch `release`:
+The project is already configured to automatically deploy only from the `release` branch:
 
 ```bash
-git push origin develop:release
+# Make sure you're on the release branch
+git checkout release
+
+# Make your changes and commit
+git add .
+git commit -m "chore: configure production OAuth"
+
+# Push to deploy
+git push origin release
 ```
 
-### 4. Teste em Produção
+### 4. Test in Production
 
-1. Acesse seu app em produção (ex: `https://seu-app.vercel.app`)
-2. Vá para a página de login
-3. Clique em **Continuar com Google**
-4. Complete o fluxo OAuth
-5. Verifique se foi redirecionado corretamente para o dashboard
+1. Access your app in production (e.g., `https://your-app.vercel.app`)
+2. Go to the login page
+3. Click **Continue with Google**
+4. Complete the OAuth flow
+5. Verify that you were redirected correctly to the dashboard
 
 ---
 
 ## 🔍 Troubleshooting
 
-### Erro: "redirect_uri_mismatch"
+### Error: "redirect_uri_mismatch"
 
-**Causa**: A URL de redirect não está autorizada no Google Cloud Console
+**Cause**: The redirect URL is not authorized in Google Cloud Console
 
-**Solução**:
-1. Verifique se `https://seu-projeto.supabase.co/auth/v1/callback` está em **Authorized redirect URIs**
-2. Certifique-se de que não há espaços ou caracteres extras
-3. Confirme que está usando `https://` (não `http://`)
-4. Aguarde alguns minutos após salvar (pode haver delay)
+**Solution**:
+1. Verify that `http://localhost:3000/api/auth/callback/google` is in **Authorized redirect URIs** for development
+2. Verify that `https://your-domain.com/api/auth/callback/google` is there for production
+3. Make sure there are no spaces or extra characters
+4. Confirm you're using `https://` in production (not `http://`)
+5. Wait a few minutes after saving (there may be a delay)
 
-### Erro: "access_denied"
+### Error: "access_denied"
 
-**Causa**: App em modo de teste e usuário não está na lista de test users
+**Cause**: App is in testing mode and user is not on the test users list
 
-**Solução**:
-1. Vá para **OAuth consent screen** no Google Cloud Console
-2. Adicione seu email em **Test users**
-3. Ou publique o app clicando em **Publish App** (sai do modo de teste)
+**Solution**:
+1. Go to **OAuth consent screen** in Google Cloud Console
+2. Add your email to **Test users**
+3. Or publish the app by clicking **Publish App** (exits testing mode)
 
-### Erro: "invalid_client"
+### Error: "invalid_client"
 
-**Causa**: Client ID ou Client Secret incorretos no Supabase
+**Cause**: Client ID or Client Secret is incorrect
 
-**Solução**:
-1. Verifique se copiou corretamente o Client ID e Secret do Google Cloud Console
-2. Não deve haver espaços antes/depois ao colar
-3. Gere um novo Client Secret se necessário
+**Solution**:
+1. Verify that you correctly copied the Client ID and Secret from Google Cloud Console to `.env.local`
+2. There should be no spaces before/after when pasting
+3. Generate a new Client Secret if necessary
 
-### Timezone não está sendo salvo
+### Error: "Configuration" or "Missing NEXTAUTH_SECRET"
 
-**Causa**: Cookie não está sendo criado antes do redirect
+**Cause**: NEXTAUTH_SECRET was not configured
 
-**Solução**:
-- O timezone é detectado automaticamente usando `Intl.DateTimeFormat().resolvedOptions().timeZone`
-- É armazenado em um cookie chamado `user_timezone` antes do redirect OAuth
-- Verifique se cookies estão habilitados no navegador
+**Solution**:
+1. Run `openssl rand -base64 32`
+2. Add the result to `NEXTAUTH_SECRET` in `.env.local`
+3. Restart the development server
 
-### Usuário criado mas sem nome
+### Timezone is not being saved
 
-**Causa**: Permissões de `profile` não foram concedidas
+**Cause**: Cookie is not being created before redirect
 
-**Solução**:
-1. Verifique se o scope `profile` está configurado na OAuth consent screen
-2. Revogue o acesso do app nas configurações da sua conta Google e tente novamente
-3. O app pegará o nome da conta Google automaticamente
+**Solution**:
+- Timezone is automatically detected using `Intl.DateTimeFormat().resolvedOptions().timeZone`
+- It's stored in a cookie called `user_timezone` before the OAuth redirect
+- Verify that cookies are enabled in your browser
 
-### Google pede autorização toda vez
+### User created but without name
 
-**Causa**: App em modo de teste
+**Cause**: `profile` permissions were not granted
 
-**Solução**:
-- Em modo de teste, tokens expiram em 7 dias
-- Para evitar isso, publique o app na OAuth consent screen
-- Ou adicione permanentemente os usuários na lista de test users
+**Solution**:
+1. Verify that the `profile` scope is configured in the OAuth consent screen
+2. Revoke app access in your Google account settings and try again
+3. The app will automatically get the name from the Google account
 
----
+### Google asks for authorization every time
 
-## 📝 Como Funciona
+**Cause**: App is in testing mode
 
-### Fluxo de Autenticação
+**Solution**:
+- In testing mode, tokens expire in 7 days
+- To avoid this, publish the app in the OAuth consent screen
+- Or permanently add users to the test users list
 
-1. **User clica em "Continuar com Google"**
-   - Timezone é detectado e salvo em cookie
-   - Usuário é redirecionado para Google OAuth
+### Error: "Database error" after Google login
 
-2. **Google autentica o usuário**
-   - Usuário faz login ou seleciona conta
-   - Google pede consentimento (primeira vez)
+**Cause**: Database was not migrated or environment variables are incorrect
 
-3. **Google redireciona para Supabase**
-   - Callback: `https://seu-projeto.supabase.co/auth/v1/callback`
-   - Supabase troca o código por sessão
-
-4. **Supabase redireciona para sua aplicação**
-   - Callback interno: `/api/auth/callback`
-   - Verifica se usuário existe no banco de dados
-
-5. **Criação/Login do usuário**
-   - Se não existe: cria novo usuário com dados do Google
-   - Pega timezone do cookie
-   - Define moeda padrão como BRL
-
-6. **Redirecionamento final**
-   - Usuário é levado para `/dashboard`
-   - Sessão ativa e autenticado
-
-### Dados Capturados do Google
-
-- **Email**: `data.user.email`
-- **Nome**: `data.user.user_metadata.name`
-- **Google ID**: `data.user.user_metadata.sub`
-- **Avatar**: `data.user.user_metadata.picture` (não está sendo salvo no momento)
-
-### Segurança
-
-- ✅ OAuth 2.0 com PKCE
-- ✅ State parameter para CSRF protection
-- ✅ HTTPS obrigatório em produção
-- ✅ Tokens gerenciados pelo Supabase
-- ✅ Session storage seguro com HTTP-only cookies
+**Solution**:
+1. Run `npx prisma generate && npx prisma db push`
+2. Verify that `DATABASE_URL` and `DIRECT_URL` are correct
+3. Confirm that the connection to Neon is working
 
 ---
 
-## 📚 Recursos Adicionais
+## 📝 How It Works
 
-- [Documentação Supabase - Google OAuth](https://supabase.com/docs/guides/auth/social-login/auth-google)
+### Authentication Flow with NextAuth
+
+1. **User clicks "Continue with Google"**
+   - NextAuth initiates the OAuth flow
+   - Timezone is detected and saved in a cookie
+   - User is redirected to Google OAuth
+
+2. **Google authenticates the user**
+   - User logs in or selects account
+   - Google asks for consent (first time)
+   - User authorizes the requested scopes
+
+3. **Google redirects to NextAuth**
+   - Callback: `http://localhost:3000/api/auth/callback/google`
+   - NextAuth exchanges the authorization code for tokens
+
+4. **NextAuth creates/updates session**
+   - Checks if user exists in the database
+   - If not exists: creates new user with Google data
+   - If exists: updates information (if needed)
+
+5. **User creation in database**
+   - Email and name extracted from Google
+   - Timezone taken from cookie
+   - Default currency set as BRL
+   - Record created in `Account` table (OAuth provider)
+
+6. **Final redirect**
+   - User is taken to `/dashboard`
+   - Session active and authenticated
+
+### Data Captured from Google
+
+- **Email**: `profile.email`
+- **Name**: `profile.name`
+- **Google ID**: `profile.sub` (stored in `Account.providerAccountId`)
+- **Avatar**: `profile.picture` (stored in `User.image`)
+- **Email verified**: `profile.email_verified`
+
+### Data Structure
+
+#### `User` Table
+```prisma
+model User {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  name           String?
+  emailVerified  DateTime?
+  image          String?
+  password       String?   // For credentials auth
+  // ... other fields
+}
+```
+
+#### `Account` Table (OAuth)
+```prisma
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String  // "oauth"
+  provider          String  // "google"
+  providerAccountId String  // User's Google ID
+  access_token      String?
+  refresh_token     String?
+  // ... other fields
+}
+```
+
+### Security
+
+- ✅ OAuth 2.0 with PKCE
+- ✅ State parameter for CSRF protection
+- ✅ HTTPS mandatory in production
+- ✅ Tokens managed by NextAuth
+- ✅ Secure session storage with HTTP-only cookies
+- ✅ JWT signed with NEXTAUTH_SECRET
+
+---
+
+## 📚 Additional Resources
+
+- [NextAuth.js Documentation](https://authjs.dev)
+- [NextAuth.js - Google Provider](https://authjs.dev/getting-started/providers/google)
 - [Google OAuth 2.0 Documentation](https://developers.google.com/identity/protocols/oauth2)
-- [Supabase Auth Helpers Next.js](https://supabase.com/docs/guides/auth/auth-helpers/nextjs)
+- [Prisma Adapter for NextAuth](https://authjs.dev/getting-started/adapters/prisma)
 
 ---
 
-## ✅ Checklist de Configuração
+## ✅ Configuration Checklist
 
-Antes de fazer deploy em produção:
+Before deploying to production:
 
-- [ ] Projeto criado no Google Cloud Console
-- [ ] OAuth consent screen configurada
-- [ ] OAuth 2.0 Client ID criado
-- [ ] Client ID e Secret copiados
-- [ ] Google OAuth habilitado no Supabase Dashboard
-- [ ] Client ID e Secret configurados no Supabase
-- [ ] Variáveis de ambiente configuradas no `.env.local`
-- [ ] Testado login com Google em desenvolvimento
-- [ ] URLs de produção adicionadas no Google Cloud Console
-- [ ] Variáveis de ambiente configuradas na Vercel
-- [ ] Deploy feito para o branch `release`
-- [ ] Testado login com Google em produção
-- [ ] Verificado criação de usuário no banco de dados
-- [ ] Confirmado que timezone está sendo salvo corretamente
+- [ ] Project created in Google Cloud Console
+- [ ] OAuth consent screen configured
+- [ ] Scopes added: email, profile, openid, calendar
+- [ ] OAuth 2.0 Client ID created
+- [ ] Client ID and Secret copied
+- [ ] `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` configured in `.env.local`
+- [ ] `NEXTAUTH_SECRET` generated and configured
+- [ ] `NEXTAUTH_URL` configured correctly
+- [ ] Development redirect URIs configured in Google Console
+- [ ] Tested Google login in development
+- [ ] Environment variables configured on Vercel (production)
+- [ ] Production redirect URIs added in Google Console
+- [ ] Deployed to the `release` branch
+- [ ] Tested Google login in production
+- [ ] Verified user creation in database
+- [ ] Confirmed that timezone is being saved correctly
 
 ---
 
-Pronto! Seu login com Google está configurado e pronto para uso. 🎉
+Ready! Your Google Sign In using NextAuth.js is configured and ready to use. 🎉
