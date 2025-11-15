@@ -19,7 +19,6 @@ export async function login(formData: FormData) {
 
     return result;
   } catch (error: any) {
-    // Re-throw redirect errors so Next.js can handle them
     if (isRedirectError(error)) {
       throw error;
     }
@@ -39,7 +38,6 @@ export async function signup(formData: FormData) {
   const timezone = formData.get("timezone") as string;
 
   try {
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -48,10 +46,8 @@ export async function signup(formData: FormData) {
       return { error: "Usuário já existe com este email" };
     }
 
-    // Hash password
     const hashedPassword = await hash(password, 10);
 
-    // Create user
     await prisma.user.create({
       data: {
         email,
@@ -63,14 +59,12 @@ export async function signup(formData: FormData) {
       },
     });
 
-    // Auto sign in after signup
     await signIn("credentials", {
       email,
       password,
       redirectTo: "/dashboard",
     });
   } catch (error: any) {
-    // Re-throw redirect errors so Next.js can handle them
     if (isRedirectError(error)) {
       throw error;
     }
