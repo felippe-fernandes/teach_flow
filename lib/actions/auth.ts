@@ -1,10 +1,10 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { hash } from "bcryptjs";
-import { prisma } from "@/lib/prisma";
 import { auth, signIn, signOut } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { hash } from "bcryptjs";
+import { revalidatePath } from "next/cache";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 export async function login(formData: FormData) {
   const email = formData.get("email") as string;
@@ -19,6 +19,11 @@ export async function login(formData: FormData) {
 
     return result;
   } catch (error: any) {
+    // Re-throw redirect errors so Next.js can handle them
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
     if (error.type === "CredentialsSignin") {
       return { error: "Email ou senha inválidos" };
     }
@@ -65,6 +70,11 @@ export async function signup(formData: FormData) {
       redirectTo: "/dashboard",
     });
   } catch (error: any) {
+    // Re-throw redirect errors so Next.js can handle them
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
     console.error("Error creating user:", error);
     return { error: error.message || "Falha ao criar conta" };
   }
@@ -174,6 +184,10 @@ export async function linkGoogleProvider() {
       redirectTo: "/dashboard/profile",
     });
   } catch (error: any) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
     console.error("Error linking Google provider:", error);
     return { error: error.message || "Erro ao vincular conta Google" };
   }
@@ -186,7 +200,6 @@ export async function unlinkProvider(provider: string) {
       return { error: "Usuário não autenticado" };
     }
 
-    // Delete the account link
     await prisma.account.deleteMany({
       where: {
         userId: user.id,
@@ -194,7 +207,6 @@ export async function unlinkProvider(provider: string) {
       },
     });
 
-    // If unlinking Google, clear Google Calendar tokens
     if (provider === "google") {
       await prisma.user.update({
         where: { id: user.id },
