@@ -33,11 +33,11 @@ export async function getClasses(filters?: ClassFilters) {
   return classes.map((classRecord) => ({
     ...classRecord,
     custom_rate: classRecord.custom_rate?.toNumber() ?? null,
-    contractor: {
+    contractor: classRecord.contractor ? {
       ...classRecord.contractor,
       default_hourly_rate: classRecord.contractor.default_hourly_rate.toNumber(),
       cancellation_penalty_rate: classRecord.contractor.cancellation_penalty_rate.toNumber(),
-    },
+    } : null,
   }));
 }
 
@@ -56,11 +56,11 @@ export async function getClass(id: string) {
   return {
     ...classRecord,
     custom_rate: classRecord.custom_rate?.toNumber() ?? null,
-    contractor: {
+    contractor: classRecord.contractor ? {
       ...classRecord.contractor,
       default_hourly_rate: classRecord.contractor.default_hourly_rate.toNumber(),
       cancellation_penalty_rate: classRecord.contractor.cancellation_penalty_rate.toNumber(),
-    },
+    } : null,
   };
 }
 
@@ -69,16 +69,29 @@ export async function createClass(formData: FormData) {
   if (!user) return { error: "Unauthorized" };
 
   const studentId = formData.get("student_id") as string;
-  const contractorId = formData.get("contractor_id") as string;
+  const contractorIdRaw = formData.get("contractor_id") as string;
 
-  // SECURITY: Verify student and contractor belong to user
-  const [student, contractor] = await Promise.all([
-    prisma.student.findFirst({ where: { id: studentId, user_id: user.id } }),
-    prisma.contractor.findFirst({ where: { id: contractorId, user_id: user.id } }),
-  ]);
+  // Convert __particular__ to null
+  const contractorId = contractorIdRaw === "__particular__" ? null : contractorIdRaw;
 
-  if (!student || !contractor) {
-    return { error: "Student or Contractor not found" };
+  // SECURITY: Verify student belongs to user
+  const student = await prisma.student.findFirst({
+    where: { id: studentId, user_id: user.id }
+  });
+
+  if (!student) {
+    return { error: "Student not found" };
+  }
+
+  // SECURITY: If contractor is specified, verify it belongs to user
+  if (contractorId) {
+    const contractor = await prisma.contractor.findFirst({
+      where: { id: contractorId, user_id: user.id }
+    });
+
+    if (!contractor) {
+      return { error: "Contractor not found" };
+    }
   }
 
   const startTime = new Date(formData.get("start_time") as string);
@@ -122,8 +135,8 @@ export async function updateClass(id: string, formData: FormData) {
       data: { status, class_notes: classNotes },
     });
 
-    // Auto-create payment if completed
-    if (status === "completed") {
+    // Auto-create payment if completed and has contractor
+    if (status === "completed" && classRecord.contractor_id) {
       // SECURITY: Only get contractor if it belongs to user
       const contractor = await prisma.contractor.findFirst({
         where: { id: classRecord.contractor_id, user_id: user.id },

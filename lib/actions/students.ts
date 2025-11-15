@@ -40,7 +40,21 @@ export async function getStudents(filters?: StudentFilters) {
 
   const students = await prisma.student.findMany({
     where,
-    include: {
+    select: {
+      id: true,
+      user_id: true,
+      name: true,
+      email: true,
+      phone_number: true,
+      native_language: true,
+      proficiency_level: true,
+      contractor_id: true, // Explicitly select contractor_id
+      status: true,
+      learning_goals: true,
+      notes: true,
+      package_details: true,
+      created_at: true,
+      updated_at: true,
       contractor: {
         select: {
           id: true,
@@ -101,7 +115,15 @@ export async function getStudent(id: string) {
     return null;
   }
 
-  return student;
+  // Convert Decimal fields to numbers for serialization
+  return {
+    ...student,
+    contractor: student.contractor ? {
+      ...student.contractor,
+      default_hourly_rate: student.contractor.default_hourly_rate.toNumber(),
+      cancellation_penalty_rate: student.contractor.cancellation_penalty_rate.toNumber(),
+    } : null,
+  };
 }
 
 export async function createStudent(formData: FormData) {
@@ -116,7 +138,8 @@ export async function createStudent(formData: FormData) {
   const phoneNumber = formData.get("phone_number") as string;
   const nativeLanguage = formData.get("native_language") as string;
   const proficiencyLevel = formData.get("proficiency_level") as string;
-  const contractorId = formData.get("contractor_id") as string;
+  const contractorIdRaw = formData.get("contractor_id") as string;
+  const contractorId = contractorIdRaw === "__particular__" ? null : contractorIdRaw;
   const status = formData.get("status") as string;
   const learningGoals = formData.get("learning_goals") as string;
   const notes = formData.get("notes") as string;
@@ -145,7 +168,7 @@ export async function createStudent(formData: FormData) {
         phone_number: phoneNumber || null,
         native_language: nativeLanguage || null,
         proficiency_level: proficiencyLevel || null,
-        contractor_id: contractorId || null,
+        contractor_id: contractorId,
         status: status || "active",
         learning_goals: learningGoals || null,
         notes: notes || null,
@@ -173,7 +196,8 @@ export async function updateStudent(id: string, formData: FormData) {
   const phoneNumber = formData.get("phone_number") as string;
   const nativeLanguage = formData.get("native_language") as string;
   const proficiencyLevel = formData.get("proficiency_level") as string;
-  const contractorId = formData.get("contractor_id") as string;
+  const contractorIdRaw = formData.get("contractor_id") as string;
+  const contractorId = contractorIdRaw === "__particular__" ? null : contractorIdRaw;
   const status = formData.get("status") as string;
   const learningGoals = formData.get("learning_goals") as string;
   const notes = formData.get("notes") as string;
@@ -205,7 +229,7 @@ export async function updateStudent(id: string, formData: FormData) {
         phone_number: phoneNumber || null,
         native_language: nativeLanguage || null,
         proficiency_level: proficiencyLevel || null,
-        contractor_id: contractorId || null,
+        contractor_id: contractorId,
         status: status || "active",
         learning_goals: learningGoals || null,
         notes: notes || null,
