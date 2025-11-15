@@ -131,7 +131,7 @@ model Class {
   id                       String   @id @default(uuid())
   user_id                  String
   student_id               String
-  contractor_id            String
+  contractor_id            String?
   start_time               DateTime @db.Timestamptz(6)
   end_time                 DateTime @db.Timestamptz(6)
   duration_minutes         Int
@@ -147,9 +147,9 @@ model Class {
   created_at               DateTime @default(now())
   updated_at               DateTime @updatedAt
 
-  user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  student    Student    @relation(fields: [student_id], references: [id], onDelete: Cascade)
-  contractor Contractor @relation(fields: [contractor_id], references: [id])
+  user       User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  student    Student     @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  contractor Contractor? @relation(fields: [contractor_id], references: [id])
   payments   Payment[]
 
   @@map("classes")
