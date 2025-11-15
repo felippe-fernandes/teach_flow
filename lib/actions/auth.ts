@@ -155,10 +155,11 @@ export async function getLinkedProviders() {
 
     const accounts = await prisma.account.findMany({
       where: { userId: user.id },
-      select: { provider: true },
+      select: { id: true, provider: true },
     });
 
     return accounts.map((account) => ({
+      id: account.id,
       provider: account.provider,
     }));
   } catch (error) {
@@ -212,4 +213,13 @@ export async function unlinkProvider(provider: string) {
     console.error("Error unlinking provider:", error);
     return { error: error.message || "Erro ao desvincular conta" };
   }
+}
+
+// TODO: Implement password reset functionality
+export async function resetPassword(formData: FormData): Promise<{ success?: boolean; error?: string }> {
+  return { error: "Funcionalidade de reset de senha ainda não implementada" };
+}
+
+export async function updatePassword(formData: FormData): Promise<{ success?: boolean; error?: string }> {
+  return { error: "Funcionalidade de atualização de senha ainda não implementada" };
 }

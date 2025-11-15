@@ -64,11 +64,11 @@ export default async function DashboardLayout({
           <div className="flex items-center gap-3 mb-3 px-3">
             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
               <span className="text-primary-foreground text-sm font-medium">
-                {user.name.charAt(0).toUpperCase()}
+                {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user.name}</p>
+              <p className="text-sm font-medium truncate">{user.name || user.email}</p>
               <p className="text-xs text-muted-foreground truncate">{user.email}</p>
             </div>
           </div>
