@@ -133,6 +133,15 @@ You will need to configure:
 3. **NextAuth** - [Official Documentation](https://authjs.dev)
    - Generate `NEXTAUTH_SECRET` as indicated above
 
+## Test Credentials
+
+For recruiters and evaluators to explore the platform:
+
+- **Email**: teste@teste.com
+- **Password**: 12345678
+
+This is a test account with sample data to demonstrate the platform's features.
+
 ## Documentation
 
 ### English
@@ -145,7 +154,3 @@ You will need to configure:
 - **[QUICK_START.PT.md](./QUICK_START.PT.md)** - Comece aqui! Guia rápido de 10 minutos
 - **[NEON_SETUP.PT.md](./NEON_SETUP.PT.md)** - Setup detalhado do banco de dados Neon
 - **[OAUTH_SETUP.PT.md](./OAUTH_SETUP.PT.md)** - Configuração do Google OAuth
-
-## License
-
-[To be defined]
