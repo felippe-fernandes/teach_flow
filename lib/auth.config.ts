@@ -60,6 +60,19 @@ export const authConfig: NextAuthConfig = {
     error: "/login",
   },
   callbacks: {
+    authorized({ auth, request: { nextUrl } }) {
+      const isLoggedIn = !!auth?.user;
+      const isOnDashboard = nextUrl.pathname.startsWith("/dashboard");
+      const isOnAuth = ["/login", "/register", "/"].includes(nextUrl.pathname);
+
+      if (isOnDashboard) {
+        if (isLoggedIn) return true;
+        return false; // Redirect to login
+      } else if (isLoggedIn && isOnAuth) {
+        return Response.redirect(new URL("/dashboard", nextUrl));
+      }
+      return true;
+    },
     async signIn({ user, account, profile }) {
       if (account?.provider === "google") {
         // Store Google tokens for Calendar integration
