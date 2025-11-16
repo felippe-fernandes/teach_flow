@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getContractor, updateContractor } from "@/lib/actions/contractors";
@@ -29,8 +29,9 @@ type Contractor = Awaited<ReturnType<typeof getContractor>>;
 export default function EditContractorPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = use(params);
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,7 +39,7 @@ export default function EditContractorPage({
 
   useEffect(() => {
     async function loadContractor() {
-      const data = await getContractor(params.id);
+      const data = await getContractor(id);
       if (!data) {
         router.push("/dashboard/contractors");
       } else {
@@ -47,19 +48,21 @@ export default function EditContractorPage({
       }
     }
     loadContractor();
-  }, [params.id, router]);
+  }, [id, router]);
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
     setError(null);
 
-    const result = await updateContractor(params.id, formData);
+    // Append id to formData since server actions can't capture closure variables properly
+    formData.append("id", id);
+    const result = await updateContractor(id, formData);
 
     if (result?.error) {
       setError(result.error);
       setLoading(false);
     } else if (result?.success) {
-      router.push(`/dashboard/contractors/${params.id}`);
+      router.push(`/dashboard/contractors/${id}`);
     }
   }
 
@@ -76,7 +79,7 @@ export default function EditContractorPage({
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center gap-4">
-        <Link href={`/dashboard/contractors/${params.id}`}>
+        <Link href={`/dashboard/contractors/${id}`}>
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -322,7 +325,7 @@ export default function EditContractorPage({
             <Button type="submit" disabled={loading}>
               {loading ? "Salvando..." : "Salvar Alterações"}
             </Button>
-            <Link href={`/dashboard/contractors/${params.id}`}>
+            <Link href={`/dashboard/contractors/${id}`}>
               <Button type="button" variant="outline" disabled={loading}>
                 Cancelar
               </Button>

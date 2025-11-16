@@ -1,138 +1,231 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { auth, signIn, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { hash } from "bcryptjs";
+import { revalidatePath } from "next/cache";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 export async function login(formData: FormData) {
-  const supabase = await createClient();
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
 
-  const data = {
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
-  };
+  try {
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirectTo: "/dashboard",
+    });
 
-  const { error } = await supabase.auth.signInWithPassword(data);
+    return result;
+  } catch (error: any) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
 
-  if (error) {
-    return { error: error.message };
+    if (error.type === "CredentialsSignin") {
+      return { error: "Email ou senha inválidos" };
+    }
+    throw error;
   }
-
-  revalidatePath("/", "layout");
-  redirect("/dashboard");
 }
 
 export async function signup(formData: FormData) {
-  const supabase = await createClient();
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+  const name = formData.get("name") as string;
+  const phoneNumber = formData.get("phone_number") as string | null;
+  const timezone = formData.get("timezone") as string;
 
-  const data = {
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
-    options: {
-      data: {
-        name: formData.get("name") as string,
-      },
-    },
-  };
+  try {
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
 
-  const { data: authData, error } = await supabase.auth.signUp(data);
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  if (authData.user) {
-    try {
-      await prisma.user.create({
-        data: {
-          supabase_auth_id: authData.user.id,
-          email: authData.user.email!,
-          name: formData.get("name") as string,
-          timezone: "America/Sao_Paulo",
-          default_currency: "BRL",
-        },
-      });
-    } catch (error) {
-      console.error("Error creating user in database:", error);
-      return { error: "Failed to create user profile" };
+    if (existingUser) {
+      return { error: "Usuário já existe com este email" };
     }
-  }
 
-  revalidatePath("/", "layout");
-  redirect("/dashboard");
+    const hashedPassword = await hash(password, 10);
+
+    await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+        phone_number: phoneNumber && phoneNumber.trim() !== "" ? phoneNumber : null,
+        timezone: timezone || "America/Sao_Paulo",
+        default_currency: "BRL",
+      },
+    });
+
+    await signIn("credentials", {
+      email,
+      password,
+      redirectTo: "/dashboard",
+    });
+  } catch (error: any) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
+    console.error("Error creating user:", error);
+    return { error: error.message || "Falha ao criar conta" };
+  }
 }
 
 export async function logout() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  revalidatePath("/", "layout");
-  redirect("/login");
+  await signOut({ redirectTo: "/login" });
 }
 
 export async function loginWithGoogle() {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
-    },
-  });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  if (data.url) {
-    redirect(data.url);
-  }
-}
-
-export async function resetPassword(formData: FormData) {
-  const supabase = await createClient();
-  const email = formData.get("email") as string;
-
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password`,
-  });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  return { success: true };
-}
-
-export async function updatePassword(formData: FormData) {
-  const supabase = await createClient();
-  const password = formData.get("password") as string;
-
-  const { error } = await supabase.auth.updateUser({
-    password: password,
-  });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  revalidatePath("/", "layout");
-  redirect("/dashboard");
+  await signIn("google", { redirectTo: "/dashboard" });
 }
 
 export async function getUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const session = await auth();
 
-  if (!user) {
+    if (!session?.user?.email) {
+      return null;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone_number: user.phone_number,
+      timezone: user.timezone,
+      default_currency: user.default_currency,
+      two_factor_enabled: user.two_factor_enabled,
+      google_calendar_sync: user.google_calendar_sync,
+      google_access_token: user.google_access_token,
+      google_refresh_token: user.google_refresh_token,
+      google_token_expiry: user.google_token_expiry,
+      created_at: user.created_at,
+      updated_at: user.updated_at,
+    };
+  } catch (error) {
+    console.error("Error getting user:", error);
     return null;
   }
+}
 
-  const dbUser = await prisma.user.findUnique({
-    where: { supabase_auth_id: user.id },
-  });
+export async function updateUserProfile(formData: FormData) {
+  try {
+    const user = await getUser();
+    if (!user) {
+      return { error: "Usuário não autenticado" };
+    }
 
-  return dbUser;
+    const timezone = formData.get("timezone") as string;
+    const defaultCurrency = formData.get("default_currency") as string;
+    const name = formData.get("name") as string;
+    const phoneNumber = formData.get("phone_number") as string;
+
+    const updateData: any = {};
+    if (name) updateData.name = name;
+    if (phoneNumber !== undefined) updateData.phone_number = phoneNumber || null;
+    if (timezone) updateData.timezone = timezone;
+    if (defaultCurrency) updateData.default_currency = defaultCurrency;
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: updateData,
+    });
+
+    revalidatePath("/dashboard/profile");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error updating user profile:", error);
+    return { error: error.message || "Erro ao atualizar perfil" };
+  }
+}
+
+export async function getLinkedProviders() {
+  try {
+    const user = await getUser();
+    if (!user) {
+      return [];
+    }
+
+    const accounts = await prisma.account.findMany({
+      where: { userId: user.id },
+      select: { id: true, provider: true },
+    });
+
+    return accounts.map((account) => ({
+      id: account.id,
+      provider: account.provider,
+    }));
+  } catch (error) {
+    console.error("Error getting linked providers:", error);
+    return [];
+  }
+}
+
+export async function linkGoogleProvider() {
+  try {
+    await signIn("google", {
+      redirectTo: "/dashboard/profile",
+    });
+  } catch (error: any) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
+    console.error("Error linking Google provider:", error);
+    return { error: error.message || "Erro ao vincular conta Google" };
+  }
+}
+
+export async function unlinkProvider(provider: string) {
+  try {
+    const user = await getUser();
+    if (!user) {
+      return { error: "Usuário não autenticado" };
+    }
+
+    await prisma.account.deleteMany({
+      where: {
+        userId: user.id,
+        provider: provider,
+      },
+    });
+
+    if (provider === "google") {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          google_access_token: null,
+          google_refresh_token: null,
+          google_token_expiry: null,
+          google_calendar_sync: false,
+        },
+      });
+    }
+
+    revalidatePath("/dashboard/profile");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error unlinking provider:", error);
+    return { error: error.message || "Erro ao desvincular conta" };
+  }
+}
+
+// TODO: Implement password reset functionality
+export async function resetPassword(formData: FormData): Promise<{ success?: boolean; error?: string }> {
+  return { error: "Funcionalidade de reset de senha ainda não implementada" };
+}
+
+export async function updatePassword(formData: FormData): Promise<{ success?: boolean; error?: string }> {
+  return { error: "Funcionalidade de atualização de senha ainda não implementada" };
 }

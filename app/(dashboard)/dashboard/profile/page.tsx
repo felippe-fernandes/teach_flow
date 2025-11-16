@@ -1,12 +1,15 @@
-import { getUser } from "@/lib/actions/auth";
+import { getUser, getLinkedProviders } from "@/lib/actions/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { redirect } from "next/navigation";
 import { User, Mail, Globe, DollarSign, Shield } from "lucide-react";
+import { ConnectedProviders } from "@/components/profile/connected-providers";
 
 export default async function ProfilePage() {
   const user = await getUser();
   if (!user) redirect("/login");
+
+  const identities = await getLinkedProviders();
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -67,6 +70,8 @@ export default async function ProfilePage() {
           </CardContent>
         </Card>
       </div>
+
+      <ConnectedProviders identities={identities} />
 
       <Card>
         <CardHeader>

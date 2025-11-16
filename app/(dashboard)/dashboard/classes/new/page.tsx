@@ -1,18 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { createClass } from "@/lib/actions/classes";
-import { getStudents } from "@/lib/actions/students";
-import { getContractors } from "@/lib/actions/contractors";
+import { ContractorSelect } from "@/components/forms/contractor-select";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { createClass } from "@/lib/actions/classes";
+import { getContractors } from "@/lib/actions/contractors";
+import { getStudents } from "@/lib/actions/students";
 import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 type Student = Awaited<ReturnType<typeof getStudents>>[0];
 type Contractor = Awaited<ReturnType<typeof getContractors>>[0];
@@ -23,6 +24,8 @@ export default function NewClassPage() {
   const [loading, setLoading] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
   const [contractors, setContractors] = useState<Contractor[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState<string>("");
+  const [selectedContractorId, setSelectedContractorId] = useState<string>("");
 
   useEffect(() => {
     async function loadData() {
@@ -32,6 +35,19 @@ export default function NewClassPage() {
     }
     loadData();
   }, []);
+
+  // Atualizar contratante automaticamente quando aluno for selecionado
+  useEffect(() => {
+    if (selectedStudentId) {
+      const student = students.find(s => s.id === selectedStudentId);
+      if (student?.contractor_id) {
+        setSelectedContractorId(student.contractor_id);
+      } else {
+        // Se o aluno não tiver contratante, limpa o campo
+        setSelectedContractorId("");
+      }
+    }
+  }, [selectedStudentId, students]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -72,32 +88,39 @@ export default function NewClassPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="student_id">Aluno <span className="text-destructive">*</span></Label>
-                  <Select name="student_id" required disabled={loading}>
-                    <SelectTrigger><SelectValue placeholder="Selecione o aluno" /></SelectTrigger>
+                  <Select name="student_id" value={selectedStudentId} onValueChange={setSelectedStudentId} required disabled={loading || students.length === 0}>
+                    <SelectTrigger><SelectValue placeholder={students.length === 0 ? "Nenhum aluno cadastrado" : "Selecione o aluno"} /></SelectTrigger>
                     <SelectContent>
                       {students.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  {students.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      <Link href="/dashboard/students/new" className="text-primary hover:underline">
+                        Cadastre um aluno
+                      </Link> para agendar aulas
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="contractor_id">Contratante <span className="text-destructive">*</span></Label>
-                  <Select name="contractor_id" required disabled={loading}>
-                    <SelectTrigger><SelectValue placeholder="Selecione o contratante" /></SelectTrigger>
-                    <SelectContent>
-                      {contractors.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="contractor_id">Contratante</Label>
+                  <ContractorSelect
+                    contractors={contractors}
+                    value={selectedContractorId}
+                    onValueChange={setSelectedContractorId}
+                    disabled={loading || contractors.length === 0}
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="start_time">Data e Hora <span className="text-destructive">*</span></Label>
-                  <Input id="start_time" name="start_time" type="datetime-local" required disabled={loading} />
+                  <Input id="start_time" name="start_time" type="datetime-local" required disabled={loading} className="[color-scheme:light] dark:[color-scheme:dark]" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="duration_minutes">Duração (minutos) <span className="text-destructive">*</span></Label>
-                  <Input id="duration_minutes" name="duration_minutes" type="number" min="15" step="15" defaultValue="60" required disabled={loading} />
+                  <Input id="duration_minutes" name="duration_minutes" type="number" defaultValue="50" required disabled={loading} />
                 </div>
               </div>
 

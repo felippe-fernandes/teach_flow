@@ -5,10 +5,13 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "./auth";
 
-export async function getPayments(filters?: { status?: string; contractorId?: string; startDate?: Date; endDate?: Date }) {
+type PaymentFilters = { status?: string; contractorId?: string; startDate?: Date; endDate?: Date };
+
+export async function getPayments(filters?: PaymentFilters) {
   const user = await getUser();
   if (!user) redirect("/login");
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = { user_id: user.id };
 
   if (filters?.status) where.status = filters.status;
@@ -19,21 +22,53 @@ export async function getPayments(filters?: { status?: string; contractorId?: st
     if (filters.endDate) where.due_date.lte = filters.endDate;
   }
 
-  return await prisma.payment.findMany({
+  const payments = await prisma.payment.findMany({
     where,
     include: { contractor: true, student: true, class: true },
     orderBy: { due_date: "desc" },
   });
+
+  // Convert Decimal fields to numbers for serialization
+  return payments.map((payment) => ({
+    ...payment,
+    amount: payment.amount.toNumber(),
+    contractor: {
+      ...payment.contractor,
+      default_hourly_rate: payment.contractor.default_hourly_rate.toNumber(),
+      cancellation_penalty_rate: payment.contractor.cancellation_penalty_rate.toNumber(),
+    },
+    class: payment.class ? {
+      ...payment.class,
+      custom_rate: payment.class.custom_rate?.toNumber() ?? null,
+    } : null,
+  }));
 }
 
 export async function getPayment(id: string) {
   const user = await getUser();
   if (!user) redirect("/login");
 
-  return await prisma.payment.findFirst({
+  const payment = await prisma.payment.findFirst({
     where: { id, user_id: user.id },
     include: { contractor: true, student: true, class: true },
   });
+
+  if (!payment) return null;
+
+  // Convert Decimal fields to numbers for serialization
+  return {
+    ...payment,
+    amount: payment.amount.toNumber(),
+    contractor: {
+      ...payment.contractor,
+      default_hourly_rate: payment.contractor.default_hourly_rate.toNumber(),
+      cancellation_penalty_rate: payment.contractor.cancellation_penalty_rate.toNumber(),
+    },
+    class: payment.class ? {
+      ...payment.class,
+      custom_rate: payment.class.custom_rate?.toNumber() ?? null,
+    } : null,
+  };
 }
 
 export async function updatePaymentStatus(id: string, status: string, receivedDate?: Date) {

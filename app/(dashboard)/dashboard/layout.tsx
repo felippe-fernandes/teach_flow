@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getUser, logout } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   LayoutDashboard,
   Building2,
@@ -37,12 +38,15 @@ export default async function DashboardLayout({
       {/* Sidebar */}
       <aside className="w-64 bg-card border-r flex flex-col">
         <div className="p-6 border-b">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">T</span>
-            </div>
-            <span className="font-bold text-xl">TeachFlow</span>
-          </Link>
+          <div className="flex items-center justify-between">
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-lg">T</span>
+              </div>
+              <span className="font-bold text-xl">TeachFlow</span>
+            </Link>
+            <ThemeToggle />
+          </div>
         </div>
 
         <nav className="flex-1 p-4 space-y-2">
@@ -60,11 +64,11 @@ export default async function DashboardLayout({
           <div className="flex items-center gap-3 mb-3 px-3">
             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
               <span className="text-primary-foreground text-sm font-medium">
-                {user.name.charAt(0).toUpperCase()}
+                {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user.name}</p>
+              <p className="text-sm font-medium truncate">{user.name || user.email}</p>
               <p className="text-xs text-muted-foreground truncate">{user.email}</p>
             </div>
           </div>
